@@ -1,0 +1,139 @@
+<mxfile host="app.diagrams.net" modified="2026-05-12T15:20:00.000Z" agent="Codex" version="24.7.17" type="device">
+  <diagram id="cluster-method-selection" name="Clustering method selection">
+    <mxGraphModel dx="1422" dy="794" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1100" math="1" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <mxCell id="title" value="Choosing an inference method under dependent data" style="rounded=0;whiteSpace=wrap;html=1;fontSize=24;fontStyle=1;strokeColor=none;fillColor=none;align=center;" vertex="1" parent="1">
+          <mxGeometry x="250" y="30" width="900" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="start" value="Regression or M-estimation with potentially dependent observations" style="rounded=1;whiteSpace=wrap;html=1;fontSize=15;fontStyle=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="500" y="100" width="400" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d1" value="What structure makes observations dependent?" style="rhombus;whiteSpace=wrap;html=1;fontSize=14;fontStyle=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="565" y="215" width="270" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="manyclusters" value="Sampling clusters are the natural dependence units&lt;br&gt;&lt;i&gt;e.g. firms, schools, villages&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="70" y="240" width="260" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="locations" value="Observations have time/spatial locations and dependence decays with distance" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1010" y="240" width="300" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="fewblocks" value="You can form a few large contiguous blocks&lt;br&gt;&lt;i&gt;time blocks, spatial regions, or geography × time blocks&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="500" y="390" width="400" height="90" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d_many" value="Many credible independent clusters?&lt;br&gt;G large and no important cross-cluster spillovers" style="rhombus;whiteSpace=wrap;html=1;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="85" y="390" width="230" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="crve" value="Use conventional cluster-robust inference&lt;br&gt;&lt;b&gt;CRVE / clustered SEs&lt;/b&gt;&lt;br&gt;Use t or normal approximation; consider finite-sample corrections." style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="40" y="590" width="300" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="few_cluster_warning" value="Few or very unbalanced clusters&lt;br&gt;Normal CRVE can be badly sized.&lt;br&gt;Consider wild cluster bootstrap, randomization inference, or a grouped-estimator approach if groups are large." style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="40" y="735" width="300" height="115" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d_block" value="Do blocks satisfy BCH geometry?&lt;br&gt;large, contiguous, similar size, small boundary relative to volume" style="rhombus;whiteSpace=wrap;html=1;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="555" y="535" width="290" height="150" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="bch" value="Use BCH fixed-G cluster covariance inference&lt;br&gt;&lt;b&gt;CCE + fixed-G critical values&lt;/b&gt;&lt;br&gt;For scalar tests: rescale t by √((G−1)/G) and compare to t&lt;sub&gt;G−1&lt;/sub&gt;.&lt;br&gt;Do not use N(0,1) with fixed G." style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="500" y="750" width="400" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="bad_blocks" value="If blocks are non-contiguous, tiny, highly unequal, or cut across dependence patterns:&lt;br&gt;redesign groups or use a method matching the dependence metric." style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="500" y="930" width="400" height="95" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d_spatial" value="Is spatial/time persistence central to the outcome?&lt;br&gt;Possible near unit root or strong long-range dependence?" style="rhombus;whiteSpace=wrap;html=1;fontSize=12;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="1035" y="395" width="250" height="145" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="spur" value="Use the spatial-dependence workflow first&lt;br&gt;&lt;b&gt;SPUR / SCPC style&lt;/b&gt;&lt;br&gt;Test I(0) and I(1) behavior of the outcome; transform if needed; then use spatially robust inference." style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="610" width="320" height="110" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="hac" value="Use distance-based HAC / Conley-style inference&lt;br&gt;&lt;b&gt;Kernel + bandwidth choice&lt;/b&gt;&lt;br&gt;Appropriate when locations are known and a plug-in covariance estimator is credible." style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1000" y="770" width="320" height="105" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="panel" value="Panel with dependence in several dimensions?&lt;br&gt;&lt;i&gt;e.g. state × time&lt;/i&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontSize=13;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="535" y="220" width="330" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="panel_note" value="If many independent units in each dimension, multiway clustering may be defensible.&lt;br&gt;If dependence is strong in both dimensions and few large blocks can be formed, BCH geography × time blocks are often closer to the theory." style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="525" y="300" width="350" height="75" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="note" value="Core diagnostic: count the number of approximately independent pieces of information about the variance.&lt;br&gt;Many pieces → plug-in normal approximations are more plausible. Few large pieces → fixed-G/BCH logic is often more appropriate." style="rounded=1;whiteSpace=wrap;html=1;fontSize=12;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="360" y="1035" width="680" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_start_d1" style="endArrow=block;html=1;rounded=0;strokeWidth=1.5;" edge="1" parent="1" source="start" target="d1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_d1_many" value="clusters" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="d1" target="manyclusters">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_d1_loc" value="locations" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="d1" target="locations">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_d1_blocks" value="few blocks" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="d1" target="fewblocks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_d1_panel" value="panel" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="d1" target="panel">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_panel_note" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="panel" target="panel_note">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_panel_blocks" value="few large blocks feasible" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="panel_note" target="fewblocks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_many_d" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="manyclusters" target="d_many">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_many_yes" value="yes" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="d_many" target="crve">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_many_no" value="no" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="d_many" target="few_cluster_warning">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_blocks_d" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="fewblocks" target="d_block">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_block_yes" value="yes" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="d_block" target="bch">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_block_no" value="no" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="d_block" target="bad_blocks">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_loc_d" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="locations" target="d_spatial">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_spur_yes" value="yes / unsure" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="d_spatial" target="spur">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_hac" value="weak short-range dependence" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="d_spatial" target="hac">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_warn_blocks" value="redesign groups" style="endArrow=block;html=1;rounded=0;strokeWidth=1.3;" edge="1" parent="1" source="few_cluster_warning" target="fewblocks">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="390" y="790"/>
+              <mxPoint x="390" y="435"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
