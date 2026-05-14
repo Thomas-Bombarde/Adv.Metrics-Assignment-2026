@@ -104,7 +104,7 @@ conf <- load_conflict_panel() %>%
     conflicts = replace_na(as.numeric(conflicts), 0),
     temp = as.numeric(temp),
     climatology = as.numeric(climatology),
-    temp_anomaly = as.numeric(temp - climatology, na.rm = TRUE)
+    temp_anomaly = temp - climatology
   )
 
 # 2. Aggregate by year (conf_year): annual grid-cell level
@@ -129,39 +129,9 @@ setDT(conf_year)
 conf_year[, temp_lag := shift(temp, 1), by = cell_id]
 conf_year[, conflict_lag := shift(conflict, 1), by = cell_id]
 
-# 3. Add country-level covariates from WDI (conf_year_cov): GDP per capita, poverty, region, income group
-wdi_path <- file.path(raw_data_dir, "WDI_1_11_2024.csv")
-if (file.exists(wdi_path)) {
-  wdi <- read_csv(wdi_path, show_col_types = FALSE) %>%
-    transmute(
-      iso3c,
-      year = as.integer(year),
-      gdpcap = suppressWarnings(as.numeric(`NY.GDP.PCAP.KD`)),
-      poverty = suppressWarnings(as.numeric(`SI.POV.DDAY`)),
-      region,
-      income
-    ) %>%
-    filter(!is.na(iso3c), iso3c != "", !is.na(year))
-
-  conf_year_cov <- conf_year %>%
-    left_join(wdi, by = c("iso3c", "year")) %>%
-    mutate(
-      loggdpcap = log(gdpcap),
-      loggdpcapdm = loggdpcap - mean(loggdpcap, na.rm = TRUE),
-      povertydm = poverty - mean(poverty, na.rm = TRUE)
-    )
-} else {
-  conf_year_cov <- conf_year %>%
-    mutate(
-      gdpcap = NA_real_,
-      poverty = NA_real_,
-      region = NA_character_,
-      income = NA_character_,
-      loggdpcap = NA_real_,
-      loggdpcapdm = NA_real_,
-      povertydm = NA_real_
-    )
-}
+# 3. Keep the analysis to weather and conflict only.
+# No GDP, poverty, or other country-level heterogeneity is used.
+conf_year_cov <- conf_year
 setDT(conf_year_cov)
 
 # =======================
@@ -256,7 +226,8 @@ write_booktabs(
   digits = 3
 )
 
-# 4. Summary by year
+# 4. plot
+# 4.1 by year
 annual_summary <- conf_year %>%
   as_tibble() %>%
   group_by(year) %>%
@@ -331,6 +302,7 @@ ggsave(
   height = 4.4,
   dpi = 300
 )
+
 
 # 5. Conflict map
 cell_summary <- conf_year %>%
@@ -410,7 +382,7 @@ ggsave(file.path(figure_dir, "map_mean_temperature.png"), temperature_map, width
 ggsave(file.path(figure_dir, "map_conflict_events.png"), events_map, width = 7.5, height = 5.2, dpi = 300)
 
 # =======================
-# 3. Regression analysis
+# 3. Regression analysis - yearly
 # =======================
 
 # data prep for regression: drop rows with missing values in key variables
@@ -443,34 +415,17 @@ m_events_lag <- feols(
   cluster = ~cell_id
 )
 
-m_gdp <- feols(
-  conflict ~ temp + temp_lag + temp:loggdpcapdm + temp_lag:loggdpcapdm | cell_id + year,
-  data = filter(reg_data, !is.na(loggdpcapdm)),
-  cluster = ~cell_id
-)
-
-m_events_gdp <- feols(
-  log1p(conflict_events) ~ temp + temp_lag + temp:loggdpcapdm + temp_lag:loggdpcapdm | cell_id + year,
-  data = filter(reg_data, !is.na(loggdpcapdm)),
-  cluster = ~cell_id
-)
-
 coef_map <- c(
   "temp" = "Temperature",
-  "temp_lag" = "Lagged temperature",
-  "temp:loggdpcapdm" = "Temperature x log GDP pc",
-  "temp_lag:loggdpcapdm" = "Lagged temperature x log GDP pc"
+  "temp_lag" = "Lagged temperature"
 )
 
 modelsummary(
   list(
     "Incidence" = m_base,
     "Incidence (with lag)" = m_lag,
-    # "Conflict + GDP" = m_gdp,
-    # "Events + GDP" = m_events_gdp,
     "Events" = m_events,
     "Events (with lag)" = m_events_lag
-   
   ),
   coef_map = coef_map,
   output = file.path(table_dir, "regression_results.tex"),
@@ -569,6 +524,292 @@ saveRDS(
       # events_gdp = m_events_gdp,
       events = m_events,
       events_lag = m_events_lag
+    )
+  ),
+  file.path(output_dir, "completed_analysis_objects.rds")
+)
+
+# =======================
+# 4. analysis - monthly
+# =======================
+
+# Prepare month-level panel. The dependent variable is scaled by 100 so
+# coefficients are readable as percentage-point changes.
+conf_month <- conf %>%
+  transmute(
+    cell_id,
+    year,
+    month,
+    date = as.Date(sprintf("%04d-%02d-01", year, month)),
+    temp,
+    temp_anomaly,
+    climatology,
+    conflict = conflict_0_1,
+    conflict_pp = 100 * conflict_0_1,
+    conflict_events = conflicts,
+    iso3c = ADM0_ISO,
+    latitude,
+    longitude
+  ) %>%
+  arrange(cell_id, year, month)
+
+setDT(conf_month)
+conf_month[, temp_lag := shift(temp, 1), by = cell_id]
+
+monthly_summary_table <- conf_month %>%
+  as_tibble() %>%
+  select(
+    `Conflict indicator` = conflict,
+    `Conflict incidence (percentage points)` = conflict_pp,
+    `Conflict events` = conflict_events,
+    `Temperature` = temp,
+    `Climatology` = climatology,
+    `Temperature anomaly` = temp_anomaly
+  ) %>%
+  pivot_longer(everything(), names_to = "Variable", values_to = "value") %>%
+  group_by(Variable) %>%
+  summarise(
+    N = sum(!is.na(value)),
+    Mean = mean(value, na.rm = TRUE),
+    SD = sd(value, na.rm = TRUE),
+    Min = min(value, na.rm = TRUE),
+    Median = median(value, na.rm = TRUE),
+    Max = max(value, na.rm = TRUE),
+    .groups = "drop"
+  )
+write_booktabs(
+  monthly_summary_table,
+  file.path(table_dir, "descriptive_variable_summary_monthly.tex"),
+  "Descriptive statistics for the monthly grid-cell panel.",
+  "tab:descriptive-variable-summary-monthly",
+  digits = 3
+)
+
+monthly_time_summary <- conf_month %>%
+  as_tibble() %>%
+  group_by(date) %>%
+  summarise(
+    conflict_incidence = mean(conflict, na.rm = TRUE),
+    mean_temperature = mean(temp, na.rm = TRUE),
+    event_count = sum(conflict_events, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+monthly_plot <- ggplot(monthly_time_summary, aes(x = date)) +
+  geom_line(
+    aes(y = conflict_incidence, color = "Conflict incidence"),
+    linewidth = 0.7
+  ) +
+  geom_line(
+    aes(
+      y = scales::rescale(
+        mean_temperature,
+        to = range(conflict_incidence)
+      ),
+      color = "Mean temperature"
+    ),
+    linewidth = 0.6
+  ) +
+  scale_color_manual(
+    values = c(
+      "Conflict incidence" = "#e4839e",
+      "Mean temperature" = "#1b6ca8"
+    ),
+    name = NULL
+  ) +
+  scale_y_continuous(
+    name = "Conflict incidence",
+    sec.axis = sec_axis(
+      ~ scales::rescale(
+        .,
+        to = range(monthly_time_summary$mean_temperature)
+      ),
+      name = "Mean temperature (C)"
+    )
+  ) +
+  labs(
+    x = "Month",
+    title = "Monthly Conflict Incidence and Mean Temperature Over Time"
+  ) +
+  theme_minimal() +
+  theme(
+    panel.grid.minor = element_blank(),
+    legend.position = "top",
+    legend.direction = "horizontal",
+    plot.title = element_text(face = "bold")
+  )
+ggsave(
+  file.path(figure_dir, "monthly_conflict_temperature.png"),
+  monthly_plot,
+  width = 7.2,
+  height = 4.4,
+  dpi = 300
+)
+
+monthly_cell_summary <- conf_month %>%
+  as_tibble() %>%
+  group_by(cell_id, latitude, longitude, iso3c) %>%
+  summarise(
+    conflict_incidence = mean(conflict, na.rm = TRUE),
+    conflict_events = sum(conflict_events, na.rm = TRUE),
+    mean_temp = mean(temp, na.rm = TRUE),
+    mean_temp_anomaly = mean(temp_anomaly, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+monthly_conflict_map <- base_map +
+  geom_tile(
+    data = monthly_cell_summary,
+    aes(x = longitude, y = latitude, fill = conflict_incidence),
+    width = 1,
+    height = 1,
+    alpha = 0.90
+  ) +
+  coord_sf(xlim = map_xlim, ylim = map_ylim, expand = FALSE) +
+  scale_fill_gradient(low = "#f7f7f2", high = "#7c2d3a", name = "Incidence") +
+  labs(x = NULL, y = NULL, title = "Mean monthly conflict incidence") +
+  theme(panel.grid = element_blank(), plot.title = element_text(face = "bold"))
+
+monthly_temperature_map <- base_map +
+  geom_tile(
+    data = monthly_cell_summary,
+    aes(x = longitude, y = latitude, fill = mean_temp),
+    width = 1,
+    height = 1,
+    alpha = 0.90
+  ) +
+  coord_sf(xlim = map_xlim, ylim = map_ylim, expand = FALSE) +
+  scale_fill_gradient(low = "#4f8fc0", high = "#c65f36", name = "Deg. C") +
+  labs(x = NULL, y = NULL, title = "Mean monthly temperature") +
+  theme(panel.grid = element_blank(), plot.title = element_text(face = "bold"))
+
+monthly_events_map <- base_map +
+  geom_tile(
+    data = monthly_cell_summary,
+    aes(x = longitude, y = latitude, fill = log1p(conflict_events)),
+    width = 1,
+    height = 1,
+    alpha = 0.90
+  ) +
+  coord_sf(xlim = map_xlim, ylim = map_ylim, expand = FALSE) +
+  scale_fill_gradient(low = "#f5f5f5", high = "#3b2d5c", name = "log(1 + events)") +
+  labs(x = NULL, y = NULL, title = "Total recorded monthly conflict events") +
+  theme(panel.grid = element_blank(), plot.title = element_text(face = "bold"))
+
+ggsave(file.path(figure_dir, "monthly_map_conflict_incidence.png"), monthly_conflict_map, width = 7.5, height = 5.2, dpi = 300)
+ggsave(file.path(figure_dir, "monthly_map_mean_temperature.png"), monthly_temperature_map, width = 7.5, height = 5.2, dpi = 300)
+ggsave(file.path(figure_dir, "monthly_map_conflict_events.png"), monthly_events_map, width = 7.5, height = 5.2, dpi = 300)
+
+reg_data_monthly <- conf_month %>%
+  as_tibble() %>%
+  filter(!is.na(temp), !is.na(temp_lag), !is.na(conflict_pp))
+
+m_month_base <- feols(
+  conflict_pp ~ temp | cell_id + year + month,
+  data = reg_data_monthly,
+  cluster = ~cell_id
+)
+
+m_month_lag <- feols(
+  conflict_pp ~ temp + temp_lag | cell_id + year + month,
+  data = reg_data_monthly,
+  cluster = ~cell_id
+)
+
+m_month_events <- feols(
+  log1p(conflict_events) ~ temp | cell_id + year + month,
+  data = reg_data_monthly,
+  cluster = ~cell_id
+)
+
+m_month_events_lag <- feols(
+  log1p(conflict_events) ~ temp + temp_lag | cell_id + year + month,
+  data = reg_data_monthly,
+  cluster = ~cell_id
+)
+
+monthly_coef_map <- c(
+  "temp" = "Temperature",
+  "temp_lag" = "Lagged temperature"
+)
+
+modelsummary(
+  list(
+    "Incidence" = m_month_base,
+    "Incidence (with lag)" = m_month_lag,
+    "Events" = m_month_events,
+    "Events (with lag)" = m_month_events_lag
+  ),
+  coef_map = monthly_coef_map,
+  output = file.path(table_dir, "regression_results_monthly.tex"),
+  stars = TRUE,
+  fmt = function(x) formatC(x, digits = 5, format = "f", big.mark = ","),
+  statistic = "std.error",
+  title = "Monthly Temperature and Conflict",
+  notes = "Incidence columns use monthly conflict incidence in percentage points: 100 if the grid cell has conflict in that month, 0 otherwise. Events columns use log(1 + recorded conflict events). All specifications include grid-cell, year, and calendar-month fixed effects. Standard errors are clustered by grid cell.",
+  gof_omit = "IC|Log|Adj|Within|RMSE"
+)
+
+monthly_effect_table <- bind_rows(
+  combined_effects(m_month_lag) %>%
+    mutate(Model = "Monthly incidence (with lag)"),
+  combined_effects(m_month_events_lag) %>%
+    mutate(Model = "Monthly events (with lag)")
+) %>%
+  select(Model, Effect, Estimate, SE, `t statistic`)
+write_booktabs(
+  monthly_effect_table,
+  file.path(table_dir, "regression_combined_effects_monthly.tex"),
+  "Combined contemporaneous and lagged monthly temperature effects.",
+  "tab:regression-combined-effects-monthly",
+  digits = 5
+)
+
+monthly_baseline_incidence <- mean(reg_data_monthly$conflict, na.rm = TRUE)
+monthly_base_combined <- sum(coef(m_month_lag)[c("temp", "temp_lag")], na.rm = TRUE)
+monthly_diagnostics <- tibble(
+  Statistic = c(
+    "Regression sample mean monthly conflict incidence",
+    "Combined temperature effect, percentage points",
+    "Percent of baseline incidence per 1 degree C",
+    "Cells in regression sample",
+    "Countries in regression sample"
+  ),
+  Value = c(
+    monthly_baseline_incidence,
+    monthly_base_combined,
+    100 * (monthly_base_combined / 100) / monthly_baseline_incidence,
+    n_distinct(reg_data_monthly$cell_id),
+    n_distinct(reg_data_monthly$iso3c)
+  )
+)
+write_booktabs(
+  monthly_diagnostics,
+  file.path(table_dir, "regression_diagnostics_monthly.tex"),
+  "Monthly regression diagnostics and scale of the baseline estimate.",
+  "tab:regression-diagnostics-monthly",
+  digits = 3
+)
+
+saveRDS(
+  list(
+    conf_year = conf_year,
+    conf_month = conf_month,
+    panel_summary = panel_summary,
+    variable_summary = variable_summary,
+    monthly_summary_table = monthly_summary_table,
+    country_summary = country_summary,
+    annual_summary = annual_summary,
+    monthly_time_summary = monthly_time_summary,
+    models = list(
+      yearly_incidence_base = m_base,
+      yearly_incidence_lag = m_lag,
+      yearly_events = m_events,
+      yearly_events_lag = m_events_lag,
+      monthly_incidence_base = m_month_base,
+      monthly_incidence_lag = m_month_lag,
+      monthly_events = m_month_events,
+      monthly_events_lag = m_month_events_lag
     )
   ),
   file.path(output_dir, "completed_analysis_objects.rds")
