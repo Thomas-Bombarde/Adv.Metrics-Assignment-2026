@@ -1,0 +1,6 @@
+proposal_id,k,method,hybrid,kH,contigConst,nPC,description
+temp_ward_k04,4,ward,FALSE,NA,0,NA,"Broad Ward clusters on detrended, standardized monthly temperature anomalies."
+temp_regional_k08,8,regional,FALSE,NA,0,NA,Regional-linkage clusters emphasizing separation of regional mean time series.
+temp_ward_contig_k12,12,ward,FALSE,NA,0.35,NA,Ward clusters with a moderate geographic contiguity weight.
+temp_ward_pca_k16,16,ward,FALSE,NA,0,12,Ward clusters after PCA filtering of the anomaly matrix.
+temp_hybrid_k20,20,ward,TRUE,60,0,NA,Hybrid Ward-regional clusters: Ward tree with regional reconstruction above 60 clusters.

@@ -1,0 +1,27 @@
+\begin{table}
+
+\caption{\label{tab:tab:bch-application-variance}Variance estimates for the annual conflict-temperature anomaly estimand.}
+\centering
+\begin{tabular}[t]{lllllllll}
+\toprule
+Method & G & Estimate & Variance & Asymptotic variance & SE & Statistic & Reference & p-value\\
+\midrule
+IID homoskedastic &  & 0.02291 & 1.01828e-05 & 0.8507 & 0.00319 & 7.18 & N(0,1) & 0.000\\
+HC0 heteroskedastic &  & 0.02291 & 8.74495e-06 & 0.7306 & 0.00296 & 7.75 & N(0,1) & 0.000\\
+HC1 heteroskedastic &  & 0.02291 & 9.03991e-06 & 0.7552 & 0.00301 & 7.62 & N(0,1) & 0.000\\
+Cluster by grid cell & 2695 & 0.02291 & 1.08094e-05 & 0.9031 & 0.00329 & 6.97 & N(0,1) & 0.000\\
+Cluster by year & 31 & 0.02291 & 8.41264e-05 & 7.0283 & 0.00917 & 2.50 & N(0,1) & 0.013\\
+\addlinespace
+Two-way cluster: cell + year &  & 0.02291 & 8.61908e-05 & 7.2008 & 0.00928 & 2.47 & N(0,1) & 0.014\\
+Bartlett HAC: small window &  & 0.02291 & 1.71335e-05 & 1.4314 & 0.00414 & 5.53 & N(0,1) & 0.000\\
+Bartlett HAC: medium window &  & 0.02291 & 2.57178e-05 & 2.1486 & 0.00507 & 4.52 & N(0,1) & 0.000\\
+Bartlett HAC: large window &  & 0.02291 & 3.47886e-05 & 2.9064 & 0.00590 & 3.88 & N(0,1) & 0.000\\
+BCH CCE: temp\_ward\_k04 & 4 & 0.02291 & 0.00010505 & 8.7764 & 0.01025 & 1.94 & t\_3 & 0.148\\
+\addlinespace
+BCH CCE: temp\_regional\_k08 & 8 & 0.02291 & 0.000117934 & 9.8528 & 0.01086 & 1.97 & t\_7 & 0.089\\
+BCH CCE: temp\_ward\_contig\_k12 & 12 & 0.02291 & 0.000102504 & 8.5637 & 0.01012 & 2.17 & t\_11 & 0.053\\
+BCH CCE: temp\_ward\_pca\_k16 & 16 & 0.02291 & 8.94855e-05 & 7.4761 & 0.00946 & 2.34 & t\_15 & 0.033\\
+BCH CCE: temp\_hybrid\_k20 & 20 & 0.02291 & 9.35808e-05 & 7.8182 & 0.00967 & 2.31 & t\_19 & 0.032\\
+\bottomrule
+\end{tabular}
+\end{table}
