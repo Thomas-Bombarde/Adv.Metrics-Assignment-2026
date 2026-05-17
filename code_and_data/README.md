@@ -1,10 +1,10 @@
 # Code and Data for the BCH/HiClimR Report
 
-This folder contains the material needed to reproduce the report:
+This folder is the reproducible entry point for the report:
 
 `Fixed-G Inference with Climate-Based Clusters`
 
-The bundle is intentionally smaller than the full project directory. It includes the derived analysis dataset, R scripts, current outputs, and the R Markdown report. It does not include the full raw replication archive or literature PDFs.
+It contains the report source, the derived analysis data, the scripts, and the generated outputs needed to rerun the analysis. It is intentionally smaller than the full project directory. It does not duplicate the raw replication archive or the literature PDFs.
 
 All commands below assume that the working directory is the report R project root, namely the folder containing `report.Rproj`. Open `report.Rproj` first, or set the working directory to that folder before running the scripts.
 
@@ -88,10 +88,13 @@ The first and fourth commands are the slowest:
 - `run_sim.R` regenerates the main Monte Carlo file `results/sim_results.rds`.
 - `propose_region_clusterings.R` reruns HiClimR and regenerates cluster assignments, cluster summaries, and maps.
 
-The folder already includes 
-the current outputs used in the report,
-so the report can be rendered directly if
-those outputs do not need to be regenerated.
+The folder already includes the current outputs used in the report, so the report can be rendered directly if those outputs do not need to be regenerated.
+
+If you only want the report PDF and the already-generated figures and tables, the minimal command is:
+
+```bash
+Rscript -e 'rmarkdown::render("code_and_data/Report_HiClimR_BCH.Rmd", output_file = "Report_HiClimR_BCH.pdf", clean = TRUE)'
+```
 
 ## Script Roles
 
@@ -157,3 +160,9 @@ Conflict outcomes are not used to choose the groups.
 BCH validity still concerns regression scores, 
 so the score diagnostics are part of the empirical 
 argument rather than an optional robustness table.
+
+## Practical Notes
+
+- Keep working from the report project root so the relative paths in the scripts resolve correctly.
+- `code_and_data/.r-lib` is a project-local library path used by the install script and should not be committed.
+- The committed bundle is designed to be sufficient for rerunning the report without the raw replication archive.
