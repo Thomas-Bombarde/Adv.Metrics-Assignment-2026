@@ -5,10 +5,9 @@
 #
 #   conflict_0_1_it = beta * temp_anom_it + cell FE + year-month FE + e_it
 #
-# The model is estimated by residualizing y and x on the two fixed effects.
-# Inference is recomputed for each HiClimR grouping using BCH fixed-G scalar
-# logic: the raw CCE standard error is multiplied by sqrt(G / (G - 1)), and
-# the t statistic is compared with t_{G-1}.
+# The estimate is obtained with fixest::feols and the BCH scalar correction is
+# applied through fixest::summary() with the small-sample settings reported in
+# the essay. The raw CCE standard error is recovered from the corrected one.
 
 source("code_and_data/paths.R")
 
@@ -16,6 +15,7 @@ suppressPackageStartupMessages({
   library(data.table)
   library(dplyr)
   library(ggplot2)
+  library(fixest)
   library(readr)
 })
 
@@ -42,20 +42,7 @@ dt[, `:=`(
 dt[, ym := sprintf("%04d-%02d", year, month)]
 setorder(dt, cell_id, ym)
 
-demean_two_way <- function(x, id, time) {
-  x - ave(x, id, FUN = mean) - ave(x, time, FUN = mean) + mean(x)
-}
-
-dt[, y_tilde := demean_two_way(conflict_0_1, cell_id, ym)]
-dt[, x_tilde := demean_two_way(temp_anom, cell_id, ym)]
-
-den <- dt[, sum(x_tilde^2, na.rm = TRUE)]
-beta_hat <- dt[, sum(x_tilde * y_tilde, na.rm = TRUE) / den]
-dt[, resid := y_tilde - beta_hat * x_tilde]
-dt[, score := x_tilde * resid]
-
 n <- nrow(dt)
-r2 <- 1 - dt[, sum(resid^2, na.rm = TRUE)] / dt[, sum(y_tilde^2, na.rm = TRUE)]
 
 assignments <- read_csv(cluster_path, show_col_types = FALSE) |>
   transmute(
@@ -67,19 +54,33 @@ assignments <- read_csv(cluster_path, show_col_types = FALSE) |>
     contigConst,
     nPC,
     cluster = as.integer(cluster)
-  )
+)
 
 one_group_result <- function(a) {
   d <- dt[a, on = "cell_id"]
   if (anyNA(d$cluster)) stop("Missing cluster assignment for ", unique(a$proposal_id))
 
-  g_scores <- d[, .(score_sum = sum(score, na.rm = TRUE)), by = cluster]
-  g <- nrow(g_scores)
-  raw_var <- sum(g_scores$score_sum^2) / den^2
-  raw_se <- sqrt(raw_var)
-  bch_se <- raw_se * sqrt(g / (g - 1))
-  t_value <- beta_hat / bch_se
-  p_value <- 2 * pt(abs(t_value), df = g - 1, lower.tail = FALSE)
+  d[, bch_region := factor(cluster)]
+  est <- feols(conflict_0_1 ~ temp_anom | cell_id + ym, data = d)
+  est_sum <- summary(
+    est,
+    vcov = ~ bch_region,
+    ssc = ssc(
+      K.adj = FALSE,
+      K.fixef = "nonnested",
+      G.adj = TRUE,
+      t.df = "min"
+    )
+  )
+
+  g <- nlevels(d$bch_region)
+  beta_hat <- coef(est)[["temp_anom"]]
+  r2 <- summary(est)$sq.cor
+  bch_se <- se(est_sum)[["temp_anom"]]
+  raw_se <- bch_se / sqrt(g / (g - 1))
+  raw_var <- raw_se^2
+  t_value <- tstat(est_sum)[["temp_anom"]]
+  p_value <- pvalue(est_sum)[["temp_anom"]]
   crit <- qt(0.975, df = g - 1)
 
   tibble(
@@ -103,7 +104,10 @@ one_group_result <- function(a) {
   )
 }
 
-results <- bind_rows(lapply(split(assignments, assignments$proposal_id), one_group_result)) |>
+results <- bind_rows(
+  lapply(split(assignments, 
+               assignments$proposal_id), 
+         one_group_result)) |>
   arrange(k)
 
 write_csv(results, file.path(out_cluster_dir, "fixest_bch_results.csv"))
